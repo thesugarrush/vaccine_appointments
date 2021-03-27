@@ -29,10 +29,10 @@ I assume you use <b>'CHROME'  version 89.x</b> as your browser i.e. you have it 
 
 Download the webdriver config for your browser here: 
 
-Chrome:	https://sites.google.com/a/chromium.org/chromedriver/downloads
-Edge:	https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
-Firefox:	https://github.com/mozilla/geckodriver/releases
-Safari:	https://webkit.org/blog/6900/webdriver-support-in-safari-10/
+- Chrome:	https://sites.google.com/a/chromium.org/chromedriver/downloads
+- Edge:	https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
+- Firefox:	https://github.com/mozilla/geckodriver/releases
+- Safari:	https://webkit.org/blog/6900/webdriver-support-in-safari-10/
 
 Put the file in the root folder of this source code, and make sure you change the path in the texas_fancy_selenium.py file.
 
