@@ -21,6 +21,8 @@ How to install conda: https://conda.io/projects/conda/en/latest/user-guide/insta
 All you need to do to install the required packages is navigate to the repository and run the following line in the command line (assuming you have Python installed):
 `conda env create -f environment.yml`
 
+Then activate your enviroment by doing this:
+`conda activate vaccine-appoinments`
 
 
 ## 2. (OPTIONAL) Download your selenium web-driver if you are NOT using chrome as your browser
