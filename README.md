@@ -1,4 +1,4 @@
-# Vaccine Appointments
+# Vaccine Appointments with SELENIUM support
 Automatically searching for vaccine appointments
 
 Thanks to the original repo that I forked from: https://github.com/TheIronicCurtain/vaccine_appointments
