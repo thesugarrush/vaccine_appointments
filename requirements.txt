@@ -1,2 +1,4 @@
 tqdm
 geopy
+boto3
+selenium

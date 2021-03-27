@@ -1,0 +1,6 @@
+name: vaccine-appoinments
+dependencies:
+  - pip=20.3.3
+  - python=3.7.5
+  - pip:
+    - -r file:requirements.txt
