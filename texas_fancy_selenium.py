@@ -14,7 +14,8 @@ from geopy.distance import geodesic
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
-
+import os
+from sys import platform
 
 store_name_to_distance = {}
 
@@ -97,6 +98,25 @@ if __name__ == '__main__':
         ns.latlong = (home.latitude, home.longitude)
         print(f'Looking for appointments {ns.distance} miles from {home}')
     with tqdm() as pbar:
-        while not open_appointments(ns, geolocator):
-            sleep(1)
-            pbar.update(1)
+        try:
+            while not open_appointments(ns, geolocator):
+                sleep(1)
+                pbar.update(1)
+            
+            #optional - use case: wear your bluetooth headset and just walk away
+            # play song if found
+            if platform == "linux" or platform == "linux2":
+                os.system('mpg123 ./startrek-tos-closing.aif')
+            elif platform == "darwin":
+                os.system('afplay ./startrek-tos-closing.aif')
+            # elif platform == "win32":
+                # Windows...i dont have windows to test this.
+        except:
+            #optional
+            # play song if error
+            if platform == "linux" or platform == "linux2":
+                os.system('mpg123 ./startrek-spock-illogical.aif')
+            elif platform == "darwin":
+                os.system('afplay ./startrek-spock-illogical.aif')
+            # elif platform == "win32":
+                # Windows...i dont have windows to test this.
