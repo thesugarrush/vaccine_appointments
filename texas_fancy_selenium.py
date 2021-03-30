@@ -21,12 +21,15 @@ store_name_to_distance = {}
 
 driver = webdriver.Chrome('./chromedriver')
 
-def open_appointments(namespace, geolocator):
+bool_play_sound = False;
+
+
+def open_appointments(namespace, geolocator, cookie1=None, cookie2=None):
     
     # add header information here to 'trick' backend to think it is from web browser
     # more doc: https://docs.python.org/3/howto/urllib2.html
     user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
-    cookies = '_ga_PL4YBQB4CC=GS1.1.1617070859.1.1.1617073263.0; _ga=GA1.1.1302840320.1617070860'
+    cookies = f"_ga_PL4YBQB4CC={cookie1['value']}; _ga={cookie2['value']}"
     headers = {
         'Accept': '*/*', 
         'Accept-Encoding': 'gzip, deflate, br',
@@ -67,7 +70,7 @@ def open_appointments(namespace, geolocator):
                 
                 driver.get(location['url'] + "&lang=en-us")
                 
-                driver.implicitly_wait(1.0) # seconds
+                driver.implicitly_wait(0.5) # seconds
 
                 drp_date_1a = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element']/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-14']")
                 drp_date_1a.click()
@@ -114,26 +117,52 @@ if __name__ == '__main__':
         home = geolocator.geocode(ns.home)
         ns.latlong = (home.latitude, home.longitude)
         print(f'Looking for appointments {ns.distance} miles from {home}')
-    with tqdm() as pbar:
-        #try:
-        while not open_appointments(ns, geolocator):
-            sleep(1)
-            pbar.update(1)
+    
+
+    # we want to keep trying if there is an exception/error when trying to get an appointment in step 2
+    # for example: if we are competing with other BOT as well.
+    while True:
         
-        # optional - use case: wear your bluetooth headset and just walk away
-        # play song if found
-        if platform == "linux" or platform == "linux2":
-            os.system('mpg123 ./startrek-tos-closing.aif')
-        elif platform == "darwin":
-            os.system('afplay ./startrek-tos-closing.aif')
-            # elif platform == "win32":
-                # Windows...i dont have windows to test this.
-        # except:
-        #     # optional
-        #     # play song if error
-        #     if platform == "linux" or platform == "linux2":
-        #         os.system('mpg123 ./startrek-spock-illogical.aif')
-        #     elif platform == "darwin":
-        #         os.system('afplay ./startrek-spock-illogical.aif')
-            # elif platform == "win32":
-                # Windows...i dont have windows to test this.
+        # get cookies so it can be included in the headers when hitting the backend
+        driver.get('https://vaccine.heb.com/scheduler?q=78717') #q=xxxxx can be any zip code, does not matter, we just want to get the cookie
+        cookie1 = driver.get_cookie("_ga")
+        cookie2 = driver.get_cookie("_ga_PL4YBQB4CC")
+        # print(f"cookie1: {cookie1}, cookie2: {cookie2}")
+        
+        with tqdm() as pbar:
+            try:
+                while not open_appointments(ns, geolocator, cookie1, cookie2):
+                    sleep(1)
+                    pbar.update(1)
+                
+                if bool_play_sound:
+                    # optional - use case: wear your bluetooth headset and just walk away
+                    # play song if found
+                    if platform == "linux" or platform == "linux2":
+                        os.system('mpg123 ./startrek-tos-closing.aif')
+                    elif platform == "darwin":
+                        os.system('afplay ./startrek-tos-closing.aif')
+                    # elif platform == "win32":
+                        # Windows...i dont have windows to test this.
+
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
+                if bool_play_sound:
+                    # optional - play song if error
+                    if platform == "linux" or platform == "linux2":
+                        os.system('mpg123 ./startrek-spock-illogical.aif')
+                    elif platform == "darwin":
+                        os.system('afplay ./startrek-spock-illogical.aif')
+                    # elif platform == "win32":
+                        # Windows...i dont have windows to test this.
+                
+                #continue loop
+                continue
+
+        break
+            
+
+            
+            
+            
+            
