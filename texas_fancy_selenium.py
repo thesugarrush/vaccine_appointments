@@ -1,5 +1,5 @@
 from time import sleep
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 
 import argparse
 import json
@@ -22,7 +22,24 @@ store_name_to_distance = {}
 driver = webdriver.Chrome('./chromedriver')
 
 def open_appointments(namespace, geolocator):
-    locations = json.loads(urlopen('https://heb-ecom-covid-vaccine.hebdigital-prd.com/vaccine_locations.json').read())['locations']
+    
+    # add header information here to 'trick' backend to think it is from web browser
+    # more doc: https://docs.python.org/3/howto/urllib2.html
+    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
+    cookies = '_ga_PL4YBQB4CC=GS1.1.1617070859.1.1.1617073263.0; _ga=GA1.1.1302840320.1617070860'
+    headers = {
+        'Accept': '*/*', 
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://vaccine.heb.com/scheduler?q=78717',
+        'User-Agent': user_agent,
+        'Cookies': cookies
+    }
+
+    url = 'https://heb-ecom-covid-vaccine.hebdigital-prd.com/vaccine_locations.json'
+    req = Request(url, headers=headers)
+    locations = json.loads(urlopen(req).read())['locations']
+
     success = False
     for location in locations:
         if namespace.cities is not None and location['city'].lower() not in namespace.cities:
@@ -45,7 +62,7 @@ def open_appointments(namespace, geolocator):
             if distance.miles > namespace.distance:
                 continue
         if location['openTimeslots'] > 0:
-            contents = urllib.request.urlopen(location['url']).read().decode('utf-8')
+            contents = urllib.request.urlopen(location['url'] + "&lang=en-us").read().decode('utf-8')
             if 'Appointments are no longer available for this location' not in contents:
                 
                 driver.get(location['url'] + "&lang=en-us")
@@ -98,25 +115,25 @@ if __name__ == '__main__':
         ns.latlong = (home.latitude, home.longitude)
         print(f'Looking for appointments {ns.distance} miles from {home}')
     with tqdm() as pbar:
-        try:
-            while not open_appointments(ns, geolocator):
-                sleep(1)
-                pbar.update(1)
-            
-            # optional - use case: wear your bluetooth headset and just walk away
-            # play song if found
-            if platform == "linux" or platform == "linux2":
-                os.system('mpg123 ./startrek-tos-closing.aif')
-            elif platform == "darwin":
-                os.system('afplay ./startrek-tos-closing.aif')
+        #try:
+        while not open_appointments(ns, geolocator):
+            sleep(1)
+            pbar.update(1)
+        
+        # optional - use case: wear your bluetooth headset and just walk away
+        # play song if found
+        if platform == "linux" or platform == "linux2":
+            os.system('mpg123 ./startrek-tos-closing.aif')
+        elif platform == "darwin":
+            os.system('afplay ./startrek-tos-closing.aif')
             # elif platform == "win32":
                 # Windows...i dont have windows to test this.
-        except:
-            # optional
-            # play song if error
-            if platform == "linux" or platform == "linux2":
-                os.system('mpg123 ./startrek-spock-illogical.aif')
-            elif platform == "darwin":
-                os.system('afplay ./startrek-spock-illogical.aif')
+        # except:
+        #     # optional
+        #     # play song if error
+        #     if platform == "linux" or platform == "linux2":
+        #         os.system('mpg123 ./startrek-spock-illogical.aif')
+        #     elif platform == "darwin":
+        #         os.system('afplay ./startrek-spock-illogical.aif')
             # elif platform == "win32":
                 # Windows...i dont have windows to test this.
