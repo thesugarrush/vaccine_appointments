@@ -65,10 +65,14 @@ def open_appointments(namespace, geolocator, cookie1=None, cookie2=None):
             if distance.miles > namespace.distance:
                 continue
         if location['openTimeslots'] > 0:
-            contents = urllib.request.urlopen(location['url'] + "&lang=en-us").read().decode('utf-8')
+            contents = urllib.request.urlopen(f"{location['url']}&lang=en-us").read().decode('utf-8')
             if 'Appointments are no longer available for this location' not in contents:
                 
-                driver.get(location['url'] + "&lang=en-us")
+                url = f"{location['url']}&lang=en-us"
+
+                print(f"url: {url}")
+                
+                driver.get(url)
                 
                 driver.implicitly_wait(0.5) # seconds
 
@@ -147,22 +151,18 @@ if __name__ == '__main__':
 
             except:
                 print("Unexpected error:", sys.exc_info()[0])
-                if bool_play_sound:
-                    # optional - play song if error
-                    if platform == "linux" or platform == "linux2":
-                        os.system('mpg123 ./startrek-spock-illogical.aif')
-                    elif platform == "darwin":
-                        os.system('afplay ./startrek-spock-illogical.aif')
+                # if bool_play_sound:
+                #     # optional - play song if error
+                #     if platform == "linux" or platform == "linux2":
+                #         os.system('mpg123 ./startrek-spock-illogical.aif')
+                #     elif platform == "darwin":
+                #         os.system('afplay ./startrek-spock-illogical.aif')
                     # elif platform == "win32":
                         # Windows...i dont have windows to test this.
                 
                 #continue loop
+                sleep(5)
                 continue
 
-        break
-            
-
-            
-            
-            
+            break
             
