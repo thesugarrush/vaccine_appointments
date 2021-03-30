@@ -48,9 +48,9 @@ def open_appointments(namespace, geolocator):
             contents = urllib.request.urlopen(location['url']).read().decode('utf-8')
             if 'Appointments are no longer available for this location' not in contents:
                 
-                driver.get(location['url'])
+                driver.get(location['url'] + "&lang=en-us")
                 
-                driver.implicitly_wait(2) # seconds
+                driver.implicitly_wait(1.0) # seconds
 
                 drp_date_1a = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element']/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-14']")
                 drp_date_1a.click()
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                 sleep(1)
                 pbar.update(1)
             
-            #optional - use case: wear your bluetooth headset and just walk away
+            # optional - use case: wear your bluetooth headset and just walk away
             # play song if found
             if platform == "linux" or platform == "linux2":
                 os.system('mpg123 ./startrek-tos-closing.aif')
@@ -112,7 +112,7 @@ if __name__ == '__main__':
             # elif platform == "win32":
                 # Windows...i dont have windows to test this.
         except:
-            #optional
+            # optional
             # play song if error
             if platform == "linux" or platform == "linux2":
                 os.system('mpg123 ./startrek-spock-illogical.aif')
