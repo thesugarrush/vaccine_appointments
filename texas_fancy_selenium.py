@@ -30,7 +30,7 @@ driver = webdriver.Chrome(executable_path='./chromedriver',options=option)
 
 bool_play_sound = True;
 
-vaccines_i_want = ['Pfizer', 'Moderna'] # specify your desired vaccine here
+vaccines_i_want = ['Pfizer'] # specify your desired vaccine here
 
 def open_appointments(namespace):
     
@@ -69,8 +69,9 @@ def open_appointments(namespace):
     driver.implicitly_wait(3) # seconds
 
     # try 3 times before giving up, each with interval backing
+    # ..also try 3 timeslots
     i = 0
-    while i < 3:
+    while i < 4:
         i = i + 1
         try:
             driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element']/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-14']").click()
@@ -79,15 +80,28 @@ def open_appointments(namespace):
 
             driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-18']").click()
             
-            driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-18']/lightning-base-combobox-item[@id='input-18-0-18']/span[@class='slds-media__body']").click()
+            #driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-18']/lightning-base-combobox-item[@id='input-18-0-18']/span[@class='slds-media__body']").click()
 
+            tm_slot = 0
+            while tm_slot < 4:
+                tm_slot = tm_slot + 1
+                try:
+                    driver.find_element_by_xpath(f"/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-18']/lightning-base-combobox-item[@id='input-18-{tm_slot-1}-18']/span[@class='slds-media__body']").click()
+                    break
+                except:
+                    continue
+    
             driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-text-align_right margin-bottom']/lightning-button[@class='slds-m-left_x-small']/button[@class='slds-button slds-button_success']").click()
 
             success = True
+
+            break
+
         except:
             driver.implicitly_wait(1) # seconds
             continue
-
+            
+        
     return success
 
 
@@ -126,7 +140,7 @@ if __name__ == '__main__':
     # select vaccine and select it
     el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[3]/select[@id='automanufacturer']")
     for option in el.find_elements_by_tag_name('option'):
-        if option.text == 'Any':
+        if option.text == 'Pfizer':
             option.click() # select() in earlier versions of webdriver
             break
 
