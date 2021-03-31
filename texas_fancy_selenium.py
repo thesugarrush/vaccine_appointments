@@ -1,86 +1,95 @@
 from time import sleep
 from urllib.request import urlopen, Request
-
 import argparse
 import json
 import sys
 from tqdm import tqdm
 import webbrowser
 import urllib.request
-
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
-
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 from selenium.webdriver.common.keys import Keys
 
 import os
 from sys import platform
-
 from datetime import datetime
+
+from decimal import *
 
 store_name_to_distance = {}
 
-driver = webdriver.Chrome('./chromedriver')
+option = webdriver.ChromeOptions()
+option.add_argument('--disable-blink-features=AutomationControlled')
+driver = webdriver.Chrome(executable_path='./chromedriver',options=option)
+# driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-bool_play_sound = False;
+bool_play_sound = True;
 
+vaccines_i_want = ['Pfizer', 'Moderna']
+desired_distance = '200'
 
-def open_appointments(namespace, geolocator, request_object, cookie1=None, cookie2=None):
+def open_appointments(namespace=None, geolocator=None, request_object=None, cookie1=None, cookie2=None):
     
-    locations = json.loads(urlopen(request_object).read())['locations']
-
     success = False
-    for location in locations:
-        if namespace.cities is not None and location['city'].lower() not in namespace.cities:
-            continue
-        if namespace.zipcodes is not None and location['zip'] not in namespace.zipcodes:
-            continue
-        distance = None
-        if namespace.distance is not None:
-            if location['name'] in store_name_to_distance:
-                distance = store_name_to_distance[location['name']]
-            else:
-                latlong = (location['latitude'], location['longitude'])
-                if any(l is None for l in latlong):
-                    geoloc = geolocator.geocode(', '.join(location[key] for key in ['street', 'city', 'state', 'zip']))
-                    if geoloc is None:
-                        geoloc = geolocator.geocode(location['zip'])
-                    latlong = (geoloc.latitude, geoloc.longitude)
-                distance = geodesic(ns.latlong, latlong)
-                store_name_to_distance[location['name']] = distance
-            if distance.miles > namespace.distance:
-                continue
-        if location['openTimeslots'] > 0:
-            contents = urllib.request.urlopen(f"{location['url']}&lang=en-us").read().decode('utf-8')
-            if 'Appointments are no longer available for this location' not in contents:
-                
-                url = f"{location['url']}&lang=en-us"
+    
+    #example: distance_sting = "177.9 miles from search area"
+    distance_string = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/ul[@class='sc-fFubgz khwWvu']/li[@class='sc-iBPRYJ uDpEv'][1]/p[@class='sc-gsTCUz evtGGn']").text
+    distance = distance_string.split( ) # i just want the 177.9
 
-                driver.get(url)
-                
-                #driver.implicitly_wait(0.25) # seconds
+    # TO DO: NEED TO BE parameterized
+    # exit this function when there is no distance
+    if Decimal(distance[0]) > Decimal(desired_distance):
+        print(f"ignoring venue - TOO FAR AWAY! distance is: {distance[0]}")
+        return success
 
-                drp_date_1a = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element']/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-14']").click()
-                
-                drp_date_1b = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][2]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-14']/lightning-base-combobox-item[@id='input-14-0-14']/span[@class='slds-media__body']").click()
+    vaccine_string = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/ul[@class='sc-fFubgz khwWvu']/li[@class='sc-iBPRYJ uDpEv'][1]/div[1]/p[@class='sc-gsTCUz jzOQjz']").text
+    print (f"vaccine_string: {vaccine_string}")
+    # TO DO: NEED TO BE parameterized
+    # exit this function when there is no distance
+    if vaccine_string not in vaccines_i_want:
+        print(f"ignoring vaccines because it is not in the list of vaccines i want")
+        return success
 
-                drp_session_2a = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-18']").click()
-                
-                drp_session_2b = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-18']/lightning-base-combobox-item[@id='input-18-0-18']/span[@class='slds-media__body']").click()
+    #driver.implicitly_wait(1) # seconds
 
-                btnContinue = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-text-align_right margin-bottom']/lightning-button[@class='slds-m-left_x-small']/button[@class='slds-button slds-button_success']").click()
-                print(f"btnContinue: {btnContinue}")
+    # Get All Tabs or Window handles and iterate using for each loop. The auto-open should have opened a new tab
+    handles = driver.window_handles
+    for ii, hh in enumerate( handles ):
+        if hh != main_window: 
+            driver.switch_to.window(hh)
+            #print(f"window {ii} has title {driver.title}")
 
-                # webbrowser.open(location['url'])
-                print('\n'.join(f'{k}={v}' for k, v in location.items() if k not in ['url', 'slotDetails'] and v is not None))
-                if distance is not None:
-                    print(f'Distance from home: {distance.miles} miles')
-                
-                print(f"url: {url}")
-                
-                success = True
+    #driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/ul[@class='sc-fFubgz khwWvu']/li[@class='sc-iBPRYJ uDpEv']/div[@class='sc-bdfBwQ kjxcKy']/a[@class='sc-hKgILt sc-fubCfw kRsWTW iOrfxa']").click()
+
+    print(f"found a venue {distance_string}, trying to get time slot")
+
+    driver.implicitly_wait(2) # seconds
+
+    driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element']/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-14']").click()
+    
+    driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][2]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-14']/lightning-base-combobox-item[@id='input-14-0-14']/span[@class='slds-media__body']").click()
+
+    driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click']/div[@class='slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right']/input[@id='input-18']").click()
+    
+    driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-18']/lightning-base-combobox-item[@id='input-18-0-18']/span[@class='slds-media__body']").click()
+
+    driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-text-align_right margin-bottom']/lightning-button[@class='slds-m-left_x-small']/button[@class='slds-button slds-button_success']").click()
+
+    #         # webbrowser.open(location['url'])
+    #         print('\n'.join(f'{k}={v}' for k, v in location.items() if k not in ['url', 'slotDetails'] and v is not None))
+    #         if distance is not None:
+    #             print(f'Distance from home: {distance.miles} miles')
+            
+    success = True
+            
     return success
+
+
 
 
 if __name__ == '__main__':
@@ -104,48 +113,40 @@ if __name__ == '__main__':
         home = geolocator.geocode(ns.home)
         ns.latlong = (home.latitude, home.longitude)
         print(f'Looking for appointments {ns.distance} miles from {home}')
+
     
+    # load the main page
+    driver.get('https://vaccine.heb.com/scheduler?q=78717')
+
+    #save current window handle
+    main_window = driver.current_window_handle
+
+    #click the autoopen and select it
+    driver.implicitly_wait(5)
+    driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[1]/input[@id='autoopen']").click()
+    
+    # select radius and select it
+    el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[2]/select[@id='autoradius']")
+    for option in el.find_elements_by_tag_name('option'):
+        if option.text == desired_distance:
+            option.click() # select() in earlier versions of webdriver
+            break
+
+    # select pfizer and select it
+    el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[3]/select[@id='automanufacturer']")
+    for option in el.find_elements_by_tag_name('option'):
+        if option.text == 'Any':
+            option.click() # select() in earlier versions of webdriver
+            break
+
 
     # we want to keep trying if there is an exception/error when trying to get an appointment in step 2
     # for example: if we are competing with other BOT as well.
     while True:
         
-        # get cookies so it can be included in the headers when hitting the backend
-        driver.get('https://vaccine.heb.com/scheduler?q=78717') #q=xxxxx can be any zip code, does not matter, we just want to get the cookie
-        cookie1 = driver.get_cookie("_ga")
-        cookie2 = driver.get_cookie("_ga_PL4YBQB4CC")
-        # print(f"cookie1: {cookie1}, cookie2: {cookie2}")
-
-        # add header information here to 'trick' backend to think it is from web browser
-        # more doc: https://docs.python.org/3/howto/urllib2.html
-        user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
-        cookies = f"_ga_PL4YBQB4CC={cookie1['value']}; _ga={cookie2['value']}"
-
-        #fake gmt time
-        fake_dt = datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")
-
-        fake_uuid = 'fe99b415fbeac2fe575ec4911d1755d9'
-
-        headers = {
-            'Accept': '*/*', 
-            'Accept-Encoding': 'gzip, deflate, br',
-            'TE': 'Trailers',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Origin': 'https://vaccine.heb.com',
-            'Referer': 'https://vaccine.heb.com/',
-            'User-Agent': user_agent,
-            'Cookies': cookies,
-            'Host': 'heb-ecom-covid-vaccine.hebdigital-prd.com',
-            'If-Modified-Since': fake_dt,
-            'If-None-Match': fake_uuid
-        }
-
-        url = 'https://heb-ecom-covid-vaccine.hebdigital-prd.com/vaccine_locations.json'
-        req_object = Request(url, headers=headers)
-
         with tqdm() as pbar:
             try:
-                while not open_appointments(ns, geolocator, req_object, cookie1, cookie2):
+                while not open_appointments():
                     sleep(1)
                     pbar.update(1)
                 
@@ -160,7 +161,7 @@ if __name__ == '__main__':
                         # Windows...i dont have windows to test this.
 
             except:
-                print("Unexpected error:", sys.exc_info()[0])
+                print("Error:", sys.exc_info()[0])
                 # if bool_play_sound:
                 #     # optional - play song if error
                 #     if platform == "linux" or platform == "linux2":
@@ -170,9 +171,20 @@ if __name__ == '__main__':
                     # elif platform == "win32":
                         # Windows...i dont have windows to test this.
                 
-                #continue loop
-                sleep(5)
-                continue
+                sleep(2)
 
+                # switch to main window again
+                handles = driver.window_handles
+                for ii, hh in enumerate( handles ):
+                    if hh != main_window:
+                        driver.switch_to.window(hh)
+                        print(f"tried this URL: {driver.current_url}")
+                        driver.close()
+                
+                driver.switch_to.window(main_window)
+
+                # break # debuging
+                continue # continue looping
+            
             break
             
