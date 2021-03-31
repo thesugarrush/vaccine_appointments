@@ -30,10 +30,9 @@ driver = webdriver.Chrome(executable_path='./chromedriver',options=option)
 
 bool_play_sound = True;
 
-vaccines_i_want = ['Pfizer', 'Moderna']
-desired_distance = '200'
+vaccines_i_want = ['Pfizer', 'Moderna'] # specify your desired vaccine here
 
-def open_appointments(namespace=None, geolocator=None, request_object=None, cookie1=None, cookie2=None):
+def open_appointments(namespace):
     
     success = False
     
@@ -41,9 +40,8 @@ def open_appointments(namespace=None, geolocator=None, request_object=None, cook
     distance_string = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/ul[@class='sc-fFubgz khwWvu']/li[@class='sc-iBPRYJ uDpEv'][1]/p[@class='sc-gsTCUz evtGGn']").text
     distance = distance_string.split( ) # i just want the 177.9
 
-    # TO DO: NEED TO BE parameterized
-    # exit this function when there is no distance
-    if Decimal(distance[0]) > Decimal(desired_distance):
+    # exit this function when the distance is too far
+    if Decimal(distance[0]) > Decimal(ns.distance):
         print(f"ignoring venue - TOO FAR AWAY! distance is: {distance[0]}")
         return success
 
@@ -79,11 +77,6 @@ def open_appointments(namespace=None, geolocator=None, request_object=None, cook
     driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-m-bottom_medium'][3]/lightning-card/article[@class='slds-card']/div[@class='slds-card__body']/slot/div[@class='slds-m-around_medium']/form/div[@class='slds-p-around_medium form']/lightning-combobox[@class='slds-form-element'][3]/div[@class='slds-form-element__control']/lightning-base-combobox[@class='slds-combobox_container']/div[@class='slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open']/div[@id='dropdown-element-18']/lightning-base-combobox-item[@id='input-18-0-18']/span[@class='slds-media__body']").click()
 
     driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-text-align_right margin-bottom']/lightning-button[@class='slds-m-left_x-small']/button[@class='slds-button slds-button_success']").click()
-
-    #         # webbrowser.open(location['url'])
-    #         print('\n'.join(f'{k}={v}' for k, v in location.items() if k not in ['url', 'slotDetails'] and v is not None))
-    #         if distance is not None:
-    #             print(f'Distance from home: {distance.miles} miles')
             
     success = True
             
@@ -94,45 +87,35 @@ def open_appointments(namespace=None, geolocator=None, request_object=None, cook
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Program to ping HEB for vaccine appointments in your area")
-    parser.add_argument('-c', '--cities', nargs='+', help='Cities to restrict the search to')
-    parser.add_argument('-H', '--home',
-                        help='Home location: can be in the form of a zipcode, address, latitude/longitude, city, etc. (requires distance)')
-    parser.add_argument('-d', '--distance', type=float,
-                        help='Maximum distance (in miles) from home (requires home)')
-    parser.add_argument('-Z', '--zipcodes', nargs='+', help='Zipcodes to restrict the search to')
+    parser.add_argument('-z', '--zipcode', 
+                    help='Zipcodes to restrict the search to')
+    parser.add_argument('-d', '--distance',
+                    help='Maximum distance (in miles) from zip code, value must match HEB spec: 5, 10, 25, 50, 100, 200')
 
     ns = parser.parse_args(sys.argv[1:])
 
-    assert (ns.distance is None) == (ns.home is None), 'Home location and distance should be supplied together'
-
-    geolocator = Nominatim(user_agent='vaccine_appointments')
-
-    if ns.cities:
-        ns.cities = {city.lower() for city in ns.cities}
-    if ns.distance:
-        home = geolocator.geocode(ns.home)
-        ns.latlong = (home.latitude, home.longitude)
-        print(f'Looking for appointments {ns.distance} miles from {home}')
-
+    assert (ns.distance is None) == (ns.zipcode is None), 'zipcode and distance should be supplied together'
     
+    print(f"distance: {str(ns.distance)}")
+
     # load the main page
-    driver.get('https://vaccine.heb.com/scheduler?q=78717')
+    driver.get(f"https://vaccine.heb.com/scheduler?q={ns.zipcode}")
 
     #save current window handle
     main_window = driver.current_window_handle
 
     #click the autoopen and select it
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(3)
     driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[1]/input[@id='autoopen']").click()
     
     # select radius and select it
     el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[2]/select[@id='autoradius']")
     for option in el.find_elements_by_tag_name('option'):
-        if option.text == desired_distance:
+        if option.text == ns.distance:
             option.click() # select() in earlier versions of webdriver
             break
 
-    # select pfizer and select it
+    # select vaccine and select it
     el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[3]/select[@id='automanufacturer']")
     for option in el.find_elements_by_tag_name('option'):
         if option.text == 'Any':
@@ -146,7 +129,7 @@ if __name__ == '__main__':
         
         with tqdm() as pbar:
             try:
-                while not open_appointments():
+                while not open_appointments(ns):
                     sleep(1)
                     pbar.update(1)
                 
