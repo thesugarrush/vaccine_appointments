@@ -21,18 +21,33 @@ from datetime import datetime
 
 from decimal import *
 
+from enum import Enum
+
 store_name_to_distance = {}
 
+# VERY IMPORTANT -- to work around blocking of selenium script
 option = webdriver.ChromeOptions()
 option.add_argument('--disable-blink-features=AutomationControlled')
 driver = webdriver.Chrome(executable_path='./chromedriver',options=option)
 # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
+# whether to play music in the end of SUCESSFUL search (or not)
 bool_play_sound = True;
 
+
+#vaccines_i_want = ['Pfizer', 'Moderna'] # specify your desired vaccine here
 vaccines_i_want = ['Pfizer'] # specify your desired vaccine here
 
-def open_appointments(namespace):
+
+# class distance(Enum):
+#     LEFT = "left"
+#     RIGHT = "right"
+#     UP = "up"
+#     DOWN = "down"
+
+
+
+def open_appointments(namespace, main_window):
     
     success = False
     
@@ -66,7 +81,7 @@ def open_appointments(namespace):
 
     print(f"found a venue {distance_string}, trying to get time slot")
 
-    driver.implicitly_wait(3) # seconds
+    driver.implicitly_wait(3.0) # seconds
 
     # try 3 times before giving up, each with interval backing
     # ..also try 3 timeslots
@@ -90,18 +105,47 @@ def open_appointments(namespace):
                     break
                 except:
                     continue
+
+            #testing only
+            driver.implicitly_wait(15.0) # seconds
     
             driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/div[@class='slds-text-align_right margin-bottom']/lightning-button[@class='slds-m-left_x-small']/button[@class='slds-button slds-button_success']").click()
 
-            success = True
+            # to do: check if the next page load properly i.e. do i got appoinment time?, if yes, then sound on
+            driver.implicitly_wait(5.0) # seconds
+            try:
+                appoinment_details = driver.find_element_by_xpath("/html/body/span[@id='j_id0:j_id18']/div[@id='container']/c-f-s-registration/div[@class='page-container']/div[1]/lightning-card/article[@class='slds-card']/div[@class='slds-card__header slds-grid']/header[@class='slds-media slds-media_center slds-has-flexi-truncate']/div[@class='slds-media__body']/h2[@class='slds-card__header-title']").text
 
-            break
+                if appoinment_details == 'Appointment Details':
+                    success = True
+                    break
+                else:
+                    # same #1
+                    # switch to main window again, false alarm! but close the window that is false alarm
+                    handles = driver.window_handles
+                    for ii, hh in enumerate( handles ):
+                        if hh != main_window:
+                            driver.switch_to.window(hh)
+                            print(f"false alarm URL: {driver.current_url}")
+                            driver.close()
+                    driver.switch_to.window(main_window)
+                    continue
+            except:
+                # same #1
+                # switch to main window again, false alarm! but close the window that is false alarm
+                handles = driver.window_handles
+                for ii, hh in enumerate( handles ):
+                    if hh != main_window:
+                        driver.switch_to.window(hh)
+                        print(f"exception - false alarm URL: {driver.current_url}")
+                        driver.close()
+                driver.switch_to.window(main_window)
+                continue
 
         except:
             driver.implicitly_wait(1) # seconds
             continue
             
-        
     return success
 
 
@@ -140,7 +184,7 @@ if __name__ == '__main__':
     # select vaccine and select it
     el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[3]/select[@id='automanufacturer']")
     for option in el.find_elements_by_tag_name('option'):
-        if option.text == 'Pfizer':
+        if option.text == 'Any':
             option.click() # select() in earlier versions of webdriver
             break
 
@@ -151,7 +195,7 @@ if __name__ == '__main__':
         
         with tqdm() as pbar:
             try:
-                while not open_appointments(ns):
+                while not open_appointments(ns, main_window):
                     sleep(1)
                     pbar.update(1)
                 
