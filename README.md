@@ -47,24 +47,21 @@ Put the file in the root folder of this source code, and make sure you change th
 Run `python texas_fancy_selenium.py --help` for usage:
 
 ```
-usage: texas_fancy_selenium.py [-h] [-c CITIES [CITIES ...]] [-H HOME] [-d DISTANCE] [-Z ZIPCODES [ZIPCODES ...]]
+usage: texas_fancy_selenium.py [-h] [-d DISTANCE] [-z ZIPCODES] [-m MANUFACTURERS MANUFACTURERS]
 
 Program to ping HEB for vaccine appointments in your area
 
-optional arguments:
+REQUIRED arguments:
   -h, --help            show this help message and exit
-  -c CITIES [CITIES ...], --cities CITIES [CITIES ...]
-                        Cities to restrict the search to
-  -H HOME, --home HOME  Home location: can be in the form of a zipcode, address, latitude/longitude, city, etc. (requires distance)
   -d DISTANCE, --distance DISTANCE
-                        Maximum distance (in miles) from home (requires home)
-  -Z ZIPCODES [ZIPCODES ...], --zipcodes ZIPCODES [ZIPCODES ...]
-                        Zipcodes to restrict the search to
+          Maximum distance (in miles) from zip code, value must match HEB spec: 5, 10, 25, 50, 100, 200. Default is: 25
+  -z ZIPCODE, --zipcode ZIPCODE
+          Zipcodes for the center of the search
+  -m MANUFACTURERS, --manufacturers MANUFACTURERS
+          Vaccine manufacturer, value:  Pfizer, Moderna, J&J/Janssen, AstraZeneca. Default is: Pfizer, Moderna, J&J/Janssen, AstraZeneca
 
-```
 Examples:
 
- - `python texas_fancy_selenium.py -c "San Antonio" Jourdanton Pleasanton Leming Poteet` would do the same as the simple example
- - `python texas_fancy_selenium.py -H "San Antonio, TX" -d 50` would look for appointments 50 miles from San Antonio
- - `python texas_fancy_selenium.py -H 78023 -d 30` would look for appointments 30 miles from zip code 78023
- - `python texas_fancy_selenium.py -z 76028 75165` would look for appointments only in the zip codes 76028 and 75165
+ - `python texas_fancy_selenium.py -z 78717 -d 25` would look for appointments 25 miles from zip code 78717
+ - `python texas_fancy_selenium.py -z 78717 -d 25 -m Pfizer` would look for appointments 25 miles from zip code 78717 for Pfizer vaccine only
+ - `python texas_fancy_selenium.py -z 78717 -d 25 -m Pfizer Moderna` would look for appointments 25 miles from zip code 78717 for Pfizer and Moderna vaccines
