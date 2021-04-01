@@ -1,50 +1,38 @@
-from time import sleep
-from urllib.request import urlopen, Request
+
 import argparse
-import json
+import os
 import sys
-from tqdm import tqdm
-import webbrowser
-import urllib.request
-from geopy.geocoders import Nominatim
-from geopy.distance import geodesic
+from datetime import datetime
+from decimal import *
+from enum import Enum
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
 from selenium.webdriver.common.keys import Keys
-
-import os
 from sys import platform
-from datetime import datetime
+from time import sleep
+from tqdm import tqdm
 
-from decimal import *
 
-from enum import Enum
-
-store_name_to_distance = {}
-
-# VERY IMPORTANT -- to work around blocking of selenium script
+# VERY IMPORTANT -- to work around blocking of selenium script by HEB programmer GRRRRRRR
 option = webdriver.ChromeOptions()
 option.add_argument('--disable-blink-features=AutomationControlled')
 driver = webdriver.Chrome(executable_path='./chromedriver',options=option)
 # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
+#value must match HEB spec: 5, 10, 25, 50, 100, 200'
+acceptable_search_radius = [5, 10, 25, 50, 100, 200]
+
+#value must match HEB option list for vaccine manufacturers
+acceptable_manufacturers = ['Pfizer', 'Moderna', 'J&J/Janssen', 'AstraZeneca']
+
+
+# ################################################################
+# YOU CAN CHANGE THIS
+# ################################################################
 # whether to play music in the end of SUCESSFUL search (or not)
 bool_play_sound = True;
-
-
-#vaccines_i_want = ['Pfizer', 'Moderna'] # specify your desired vaccine here
-vaccines_i_want = ['Pfizer'] # specify your desired vaccine here
-
-
-# class distance(Enum):
-#     LEFT = "left"
-#     RIGHT = "right"
-#     UP = "up"
-#     DOWN = "down"
-
 
 
 def open_appointments(namespace, main_window):
@@ -61,10 +49,9 @@ def open_appointments(namespace, main_window):
         return success
 
     vaccine_string = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/ul[@class='sc-fFubgz khwWvu']/li[@class='sc-iBPRYJ uDpEv'][1]/div[1]/p[@class='sc-gsTCUz jzOQjz']").text
-    print (f"vaccine_string: {vaccine_string}")
-    # TO DO: NEED TO BE parameterized
-    # exit this function when there is no distance
-    if vaccine_string not in vaccines_i_want:
+    #print (f"vaccine_string: {vaccine_string}")
+    
+    if vaccine_string not in namespace.manufacturers:
         print(f"ignoring vaccines because it is not in the list of vaccines i want")
         return success
 
@@ -79,7 +66,7 @@ def open_appointments(namespace, main_window):
 
     #driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/ul[@class='sc-fFubgz khwWvu']/li[@class='sc-iBPRYJ uDpEv']/div[@class='sc-bdfBwQ kjxcKy']/a[@class='sc-hKgILt sc-fubCfw kRsWTW iOrfxa']").click()
 
-    print(f"found a venue {distance_string}, trying to get time slot")
+    print(f"***** Found a venue {distance_string}, trying to get time slot")
 
     driver.implicitly_wait(3.0) # seconds
 
@@ -154,15 +141,25 @@ def open_appointments(namespace, main_window):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Program to ping HEB for vaccine appointments in your area")
     parser.add_argument('-z', '--zipcode', 
-                    help='Zipcodes to restrict the search to')
+                    help='Zipcodes for the center of the search')
     parser.add_argument('-d', '--distance',
+                    default=25,
                     help='Maximum distance (in miles) from zip code, value must match HEB spec: 5, 10, 25, 50, 100, 200')
+    parser.add_argument('-m', '--manufacturers',
+                    nargs='+',
+                    default=acceptable_manufacturers,
+                    help='Vaccine manufacturer, value:  Pfizer, Moderna, J&J/Janssen, AstraZeneca')
 
     ns = parser.parse_args(sys.argv[1:])
 
-    assert (ns.distance is None) == (ns.zipcode is None), 'zipcode and distance should be supplied together'
+    assert (ns.zipcode is not None), 'US zipcode must me provided'
+
+    assert (Decimal(ns.distance) in acceptable_search_radius), 'value must match HEB spec: 5, 10, 25, 50, 100, 200'
+
+    assert (True for x in ns.manufacturers if x in acceptable_manufacturers), 'value must be in Pfizer, Moderna, J&J/Janssen, AstraZeneca'
     
-    print(f"distance: {str(ns.distance)}")
+    print(f"distance: {Decimal(ns.distance)}")
+    print(f"manufacturer: {ns.manufacturers}")
 
     # load the main page
     driver.get(f"https://vaccine.heb.com/scheduler?q={ns.zipcode}")
@@ -174,18 +171,21 @@ if __name__ == '__main__':
     driver.implicitly_wait(5)
     driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[1]/input[@id='autoopen']").click()
     
-    # select radius and select it
+    # select radius from menu option
     el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[2]/select[@id='autoradius']")
     for option in el.find_elements_by_tag_name('option'):
         if option.text == ns.distance:
-            option.click() # select() in earlier versions of webdriver
+            option.click()
             break
 
-    # select vaccine and select it
+    # select vaccine from menu option
     el = driver.find_element_by_xpath("/html/body/div[@id='root']/div[@class='sc-kstrdz khymNb']/div[@class='sc-bdfBwQ sc-bkzZxe iXgbQJ dHUsHE']/div[@class='sc-bdfBwQ sc-hBEYos iXgbQJ gBMEYn']/div[@class='sc-bdfBwQ gNchlM']/div[@class='sc-bqyKva ehfErK']/div[@class='sc-bdfBwQ iXgbQJ']/label[3]/select[@id='automanufacturer']")
+    txt = 'Any'
+    if len(ns.manufacturers) == 1:
+        txt = ns.manufacturers[0] # this is the only one I want
     for option in el.find_elements_by_tag_name('option'):
-        if option.text == 'Any':
-            option.click() # select() in earlier versions of webdriver
+        if option.text == txt:
+            option.click()
             break
 
 

@@ -47,18 +47,21 @@ Put the file in the root folder of this source code, and make sure you change th
 Run `python texas_fancy_selenium.py --help` for usage:
 
 ```
-usage: texas_fancy_selenium.py [-h] [-d DISTANCE] [-z ZIPCODES]
+usage: texas_fancy_selenium.py [-h] [-d DISTANCE] [-z ZIPCODES] [-m MANUFACTURERS MANUFACTURERS]
 
 Program to ping HEB for vaccine appointments in your area
 
 REQUIRED arguments:
   -h, --help            show this help message and exit
   -d DISTANCE, --distance DISTANCE
-          Maximum distance (in miles) from zipcode
+          Maximum distance (in miles) from zip code, value must match HEB spec: 5, 10, 25, 50, 100, 200. Default is: 25
   -z ZIPCODE, --zipcode ZIPCODE
-          Zipcode to where the search should center from
+          Zipcodes for the center of the search
+  -m MANUFACTURERS, --manufacturers MANUFACTURERS
+          Vaccine manufacturer, value:  Pfizer, Moderna, J&J/Janssen, AstraZeneca. Default is: Pfizer, Moderna, J&J/Janssen, AstraZeneca
 
-```
 Examples:
 
  - `python texas_fancy_selenium.py -z 78717 -d 25` would look for appointments 25 miles from zip code 78717
+ - `python texas_fancy_selenium.py -z 78717 -d 25 -m Pfizer` would look for appointments 25 miles from zip code 78717 for Pfizer vaccine only
+ - `python texas_fancy_selenium.py -z 78717 -d 25 -m Pfizer Moderna` would look for appointments 25 miles from zip code 78717 for Pfizer and Moderna vaccines
